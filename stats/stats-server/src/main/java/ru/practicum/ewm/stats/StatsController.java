@@ -23,13 +23,13 @@ public class StatsController {
     public static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
     @PostMapping("/hit")
-    @ResponseStatus( code = HttpStatus.CREATED)
+    @ResponseStatus(code = HttpStatus.CREATED)
     public StatsDto saveStats(@Valid @RequestBody NewStatsRequest request) {
         return statsService.saveStats(request);
     }
 
     @GetMapping("/stats")
-    @ResponseStatus( code = HttpStatus.OK)
+    @ResponseStatus(code = HttpStatus.OK)
     public List<ViewStats> getStats(
             @RequestParam @DateTimeFormat(pattern = DATE_TIME_PATTERN) LocalDateTime start,
             @RequestParam @DateTimeFormat(pattern = DATE_TIME_PATTERN) LocalDateTime end,
