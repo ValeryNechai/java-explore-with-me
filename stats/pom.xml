@@ -27,6 +27,8 @@
         <lombok.version>1.18.30</lombok.version>
         <httpclient5.version>5.3.1</httpclient5.version>
         <jackson.version>2.15.2</jackson.version>
+        <jakarta-validation.version>3.0.2</jakarta-validation.version>
+
     </properties>
 
     <!-- Управление версиями для всех дочерних модулей -->
@@ -52,6 +54,12 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
                 <version>${jackson.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.validation</groupId>
+                <artifactId>jakarta.validation-api</artifactId>
+                <version>${jakarta-validation.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
