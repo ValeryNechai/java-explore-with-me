@@ -19,6 +19,7 @@ import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -32,11 +33,14 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     public Collection<CompilationDto> getAllCompilations(Boolean pinned, int from, int size) {
-        validatePinned(pinned);
-
         int page = from / size;
         Pageable pageable = PageRequest.of(page, size);
-        Page<Compilation> compilationsPage = compilationRepository.findByPinned(pinned, pageable);
+        Page<Compilation> compilationsPage;
+        if (pinned == null) {
+            compilationsPage = compilationRepository.findAll(pageable);
+        } else {
+            compilationsPage = compilationRepository.findByPinned(pinned, pageable);
+        }
 
         return compilationsPage.stream()
                 .map(CompilationMapper::mapToCompilationDto)
@@ -44,7 +48,7 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
-    public CompilationDto getCompilationById(Integer compId) {
+    public CompilationDto getCompilationById(Long compId) {
         Compilation compilation = validateCompilation(compId);
 
         return CompilationMapper.mapToCompilationDto(compilation);
@@ -54,7 +58,10 @@ public class CompilationServiceImpl implements CompilationService {
     @Transactional
     public CompilationDto createCompilation(NewCompilationDto request) {
         validateTitle(request.getTitle());
-        List<Event> events = validateEvents(request.getEvents());
+        List<Event> events = new ArrayList<>();
+        if (request.getEvents() != null && !request.getEvents().isEmpty()) {
+            events = validateEvents(request.getEvents());
+        }
 
         Compilation compilation = Compilation.builder()
                 .title(request.getTitle())
@@ -70,7 +77,7 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     @Transactional
-    public void deleteCompilation(Integer compId) {
+    public void deleteCompilation(Long compId) {
         validateCompilation(compId);
 
         compilationRepository.deleteById(compId);
@@ -79,7 +86,7 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     @Transactional
-    public CompilationDto updateCompilation(Integer compId, UpdateCompilationRequest request) {
+    public CompilationDto updateCompilation(Long compId, UpdateCompilationRequest request) {
         Compilation compilation = validateCompilation(compId);
 
         if (request.hasEvents()) {
@@ -94,13 +101,12 @@ public class CompilationServiceImpl implements CompilationService {
          if (request.hasTitle()) {
              validateTitle(request.getTitle());
              compilation.setTitle(request.getTitle());
-
          }
 
          return CompilationMapper.mapToCompilationDto(compilation);
     }
 
-    private Compilation validateCompilation(Integer compId) {
+    private Compilation validateCompilation(Long compId) {
         if (compId == null) {
             throw new NotFoundException("Id не может быть null!");
         }
@@ -109,7 +115,7 @@ public class CompilationServiceImpl implements CompilationService {
                 .orElseThrow(() -> new BadRequestException(String.format("Подборка с id = %d не найдена!", compId)));
     }
 
-    private List<Event> validateEvents(List<Integer> eventIds) {
+    private List<Event> validateEvents(List<Long> eventIds) {
         List<Event> events = eventRepository.findByIdIn(eventIds);
 
         if (events.size() != eventIds.size()) {

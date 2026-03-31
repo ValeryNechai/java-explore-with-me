@@ -6,32 +6,32 @@ import java.util.Collection;
 import java.util.List;
 
 public interface EventService {
-    Collection<EventShortDto> getEventsByUserId(Integer userId, int from, int size);
+    Collection<EventShortDto> getEventsByUserId(Long userId, int from, int size);
 
-    EventFullDto createEvent(Integer userId, NewEventDto request);
+    EventFullDto createEvent(Long userId, NewEventDto request);
 
-    EventFullDto getEventDtoById(Integer userId, Integer eventId);
+    EventFullDto getEventDtoById(Long userId, Long eventId);
 
-    EventFullDto updateEventUser(Integer userId, Integer eventId, UpdateEventUserRequest request);
+    EventFullDto updateEventUser(Long userId, Long eventId, UpdateEventUserRequest request);
 
-    Collection<ParticipationRequestDto> getParticipationRequestsByUserIdAndEventId(Integer userId, Integer eventId);
+    Collection<ParticipationRequestDto> getParticipationRequestsByUserIdAndEventId(Long userId, Long eventId);
 
-    EventRequestStatusUpdateResult updateEventRequestStatus(Integer userId,
-                                                            Integer eventId,
+    EventRequestStatusUpdateResult updateEventRequestStatus(Long userId,
+                                                            Long eventId,
                                                             EventRequestStatusUpdateRequest request);
 
-    Collection<EventFullDto> getAllEventsByParameters(List<Integer> users,
+    Collection<EventFullDto> getAllEventsByParameters(List<Long> users,
                                                       List<String> states,
-                                                      List<Integer> categories,
+                                                      List<Long> categories,
                                                       String rangeStart,
                                                       String rangeEnd,
                                                       int from,
                                                       int size);
 
-    EventFullDto updateEventAdmin(Integer eventId, UpdateEventAdminRequest request);
+    EventFullDto updateEventAdmin(Long eventId, UpdateEventAdminRequest request);
 
     Collection<EventShortDto> getAllEventsPublic(String text,
-                                                 List<Integer> categories,
+                                                 List<Long> categories,
                                                  Boolean paid,
                                                  String rangeStart,
                                                  String rangeEnd,
@@ -40,11 +40,11 @@ public interface EventService {
                                                  int from,
                                                  int size);
 
-    EventFullDto getEventByIdPublic(Integer id);
+    EventFullDto getEventByIdPublic(Long id);
 
-    Collection<ParticipationRequestDto> getParticipationRequestDtoByUserId(Integer userId);
+    Collection<ParticipationRequestDto> getParticipationRequestDtoByUserId(Long userId);
 
-    ParticipationRequestDto createParticipationRequest(Integer userId, Integer eventId);
+    ParticipationRequestDto createParticipationRequest(Long userId, Long eventId);
 
-    ParticipationRequestDto cancelParticipationRequest(Integer userId, Integer requestId);
+    ParticipationRequestDto cancelParticipationRequest(Long userId, Long requestId);
 }

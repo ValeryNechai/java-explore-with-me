@@ -43,7 +43,7 @@ public class EventServiceImpl implements EventService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
-    public Collection<EventShortDto> getEventsByUserId(Integer userId, int from, int size) {
+    public Collection<EventShortDto> getEventsByUserId(Long userId, int from, int size) {
         validateUser(userId);
         validateFromAndSize(from, size);
 
@@ -58,9 +58,9 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventFullDto createEvent(Integer userId, NewEventDto request) {
+    public EventFullDto createEvent(Long userId, NewEventDto request) {
         User initiator = validateUser(userId);
-        Category category = validateCategory(request.getCategoryId());
+        Category category = validateCategory(request.getCategory());
         validateEventDate(request.getEventDate());
 
         Event event = EventMapper.mapToEvent(request, initiator, category);
@@ -71,7 +71,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventFullDto getEventDtoById(Integer userId, Integer eventId) {
+    public EventFullDto getEventDtoById(Long userId, Long eventId) {
         Event event = getEventById(userId, eventId);
 
         return EventMapper.mapToEventFullDto(event);
@@ -79,11 +79,11 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventFullDto updateEventUser(Integer userId, Integer eventId, UpdateEventUserRequest request) {
+    public EventFullDto updateEventUser(Long userId, Long eventId, UpdateEventUserRequest request) {
         Event event = getEventById(userId, eventId);
 
         if (event.getState().equals(EventState.PUBLISHED)) {
-            throw new ValidationException("Изменять можно только отмененные события или " +
+            throw new ConflictException("Изменять можно только отмененные события или " +
                     "события в ожидании модерации");
         }
         if (request.hasEventDate()) {
@@ -112,8 +112,8 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public Collection<ParticipationRequestDto> getParticipationRequestsByUserIdAndEventId(Integer userId,
-                                                                                          Integer eventId) {
+    public Collection<ParticipationRequestDto> getParticipationRequestsByUserIdAndEventId(Long userId,
+                                                                                          Long eventId) {
         Event event = getEventById(userId, eventId);
 
         List<ParticipationRequest> participationRequests =
@@ -126,18 +126,23 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventRequestStatusUpdateResult updateEventRequestStatus(Integer userId,
-                                                                   Integer eventId,
+    public EventRequestStatusUpdateResult updateEventRequestStatus(Long userId,
+                                                                   Long eventId,
                                                                    EventRequestStatusUpdateRequest request) {
         Event event = getEventById(userId, eventId);
+        int currentConfirmed = (event.getConfirmedRequests() == null) ? 0 : event.getConfirmedRequests();
+        int limit = event.getParticipantLimit() == null ? 0 : event.getParticipantLimit();
 
-        if (event.getParticipantLimit().equals(0) || !event.getRequestModeration()) {
+        if (!event.getInitiator().getId().equals(userId)) {
+            throw new BadRequestException("Только инициатор события может изменять статусы заявок");
+        }
+
+        if (limit == 0 || !event.getRequestModeration()) {
             throw new BadRequestException("Для события лимит заявок равен 0 или отключена пре-модерация заявок - " +
                     "подтверждение заявок не требуется!");
         }
 
-        int currentConfirmed = participationRequestRepository.findCountByEventId(eventId);
-        if (currentConfirmed >= event.getParticipantLimit()) {
+        if (currentConfirmed >= limit) {
             throw new ConflictException("Уже достигнут лимит по заявкам на данное событие.");
         }
 
@@ -150,32 +155,29 @@ public class EventServiceImpl implements EventService {
         validateAllRequestsPending(participationRequests);
 
         int availableSlots = event.getParticipantLimit() - currentConfirmed;
+        int confirmedCount = 0;
 
         for (ParticipationRequest pr : participationRequests) {
-
             if (request.getStatus().equals(EventRequestStatus.REJECTED)) {
                 pr.setStatus(RequestStatus.REJECTED);
-                participationRequestRepository.save(pr);
                 rejectedRequests.add(ParticipationRequestMapper.mapToParticipationRequestDto(pr));
             } else if (request.getStatus().equals(EventRequestStatus.CONFIRMED)) {
                 if (availableSlots > 0) {
                     pr.setStatus(RequestStatus.CONFIRMED);
-                    participationRequestRepository.save(pr);
                     confirmedRequests.add(ParticipationRequestMapper.mapToParticipationRequestDto(pr));
                     availableSlots--;
+                    confirmedCount++;
                     log.debug("Заявка с id = {} подтверждена.", pr.getId());
                 } else {
                     pr.setStatus(RequestStatus.REJECTED);
-                    participationRequestRepository.save(pr);
                     rejectedRequests.add(ParticipationRequestMapper.mapToParticipationRequestDto(pr));
                     log.info("Достигнут лимит заявок = {}, заявка {} отклонена.",
                             event.getParticipantLimit(), pr.getId());
                 }
             }
         }
-        int newConfirmedCount = participationRequestRepository.findCountByEventId(eventId);
-        event.setConfirmedRequests(newConfirmedCount);
-        eventRepository.save(event);
+
+        event.setConfirmedRequests(currentConfirmed + confirmedCount);
 
         log.debug("Обновлено заявок для события {}: подтверждено - {}, отклонено - {}",
                 event.getId(), confirmedRequests.size(), rejectedRequests.size());
@@ -184,26 +186,46 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public Collection<EventFullDto> getAllEventsByParameters(List<Integer> users,
+    public Collection<EventFullDto> getAllEventsByParameters(List<Long> users,
                                                              List<String> states,
-                                                             List<Integer> categories,
+                                                             List<Long> categories,
                                                              String rangeStart,
                                                              String rangeEnd,
                                                              int from,
                                                              int size) {
-        validateIdsLists(users, "users");
-        validateIdsLists(categories, "categories");
-        validateFromAndSize(from, size);
-        List<EventState> eventStates = validateStates(states);
-        LocalDateTime start = LocalDateTime.parse(rangeStart, FORMATTER);
-        LocalDateTime end = LocalDateTime.parse(rangeEnd, FORMATTER);
-        validateStartAndEndDate(start, end);
+        if (users == null || users.isEmpty()) {
+            users = null;
+        } else {
+            validateIdsLists(users, "users");
+        }
+
+        if (categories == null || categories.isEmpty()) {
+            categories = null;
+        } else {
+            validateIdsLists(categories, "categories");
+        }
+
+        List<EventState> eventStates = null;
+        if (states != null && !states.isEmpty()) {
+            eventStates = validateStates(states);
+        }
+
+        LocalDateTime start = (rangeStart == null)
+                ? LocalDateTime.now()
+                : LocalDateTime.parse(rangeStart, FORMATTER);
 
         int page = from / size;
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdOn").descending());
-        Page<Event> eventsPage = eventRepository.findByInitiatorIdInAndStateInAndCategoryIdInAndEventDateBetween(
-                users, eventStates, categories, start, end, pageable
-        );
+
+        Page<Event> eventsPage;
+        if (rangeEnd != null) {
+            LocalDateTime end = LocalDateTime.parse(rangeEnd, FORMATTER);
+            eventsPage = eventRepository.findByInitiatorIdInAndStateInAndCategoryIdInAndEventDateBetween(
+                    users, eventStates, categories, start, end, pageable);
+        } else {
+            eventsPage = eventRepository.findByInitiatorIdInAndStateInAndCategoryIdInAndEventDateAfter(
+                    users, eventStates, categories, start, pageable);
+        }
 
         return eventsPage.stream()
                 .map(EventMapper::mapToEventFullDto)
@@ -212,10 +234,10 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventFullDto updateEventAdmin(Integer eventId, UpdateEventAdminRequest request) {
+    public EventFullDto updateEventAdmin(Long eventId, UpdateEventAdminRequest request) {
         Event event = validateEvent(eventId);
 
-        if (request.hasStateAction() && request.getStateAction().equals(EventAdminStateAction.PUBLISH_EVENT)){
+        if (request.hasStateAction() && request.getStateAction().equals(EventAdminStateAction.PUBLISH_EVENT)) {
             if (event.getEventDate().plusHours(1).equals(LocalDateTime.now()) ||
                     event.getEventDate().plusHours(1).isBefore(LocalDateTime.now())) {
                 throw new ValidationException("Дата начала изменяемого события должна быть " +
@@ -223,12 +245,12 @@ public class EventServiceImpl implements EventService {
             }
 
             if (event.getState().equals(EventState.PUBLISHED) || event.getState().equals(EventState.CANCELED)) {
-                throw new ValidationException("Событие можно публиковать, " +
+                throw new ConflictException("Событие можно публиковать, " +
                         "только если оно в состоянии ожидания публикации.");
             }
         } else if (request.hasStateAction() && request.getStateAction().equals(EventAdminStateAction.REJECT_EVENT)) {
             if (event.getState().equals(EventState.PUBLISHED)) {
-                throw new ValidationException("Событие можно отклонить, только если оно еще не опубликовано.");
+                throw new ConflictException("Событие можно отклонить, только если оно еще не опубликовано.");
             }
         }
 
@@ -259,7 +281,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public Collection<EventShortDto> getAllEventsPublic(String text,
-                                                       List<Integer> categories,
+                                                       List<Long> categories,
                                                        Boolean paid,
                                                        String rangeStart,
                                                        String rangeEnd,
@@ -267,25 +289,25 @@ public class EventServiceImpl implements EventService {
                                                        String sort,
                                                        int from,
                                                        int size) {
-        if (text == null) {
-            throw new BadRequestException("text не может быть null.");
-        } else if (paid == null) {
-            throw new BadRequestException("paid не может быть null.");
+        if (categories == null || categories.isEmpty()) {
+            categories = null;
+        } else {
+            validateIdsLists(categories, "categories");
         }
-
-        validateIdsLists(categories, "categories");
         validateFromAndSize(from, size);
-        LocalDateTime start = null;
-        LocalDateTime end = null;
-        if (rangeStart != null && rangeEnd != null) {
-            start = LocalDateTime.parse(rangeStart, FORMATTER);
-            end = LocalDateTime.parse(rangeEnd, FORMATTER);
-            validateStartAndEndDate(start, end);
-        }
+        LocalDateTime start = (rangeStart == null)
+                ? LocalDateTime.now()
+                : LocalDateTime.parse(rangeStart, FORMATTER);
+        LocalDateTime end = (rangeEnd == null)
+                ? null
+                : LocalDateTime.parse(rangeEnd, FORMATTER);
+        validateStartAndEndDate(start, end);
 
         int page = from / size;
         Pageable pageable;
-        if (sort.equals("EVENT_DATE")) {
+        if (sort == null) {
+            pageable = PageRequest.of(page, size);
+        } else if (sort.equals("EVENT_DATE")) {
             pageable = PageRequest.of(page, size, Sort.by("eventDate").descending());
         } else if (sort.equals("VIEWS")) {
             pageable = PageRequest.of(page, size, Sort.by("views").descending());
@@ -293,8 +315,29 @@ public class EventServiceImpl implements EventService {
             throw new BadRequestException("Указан неизвестный тип сортировки.");
         }
 
-        Page<Event> eventsPage =
-                eventRepository.findAllEventsPublic(text, categories, paid, start, end, onlyAvailable, pageable);
+        Page<Event> eventsPage;
+        if (text != null && !text.isBlank()) {
+            if (end != null) {
+                eventsPage = eventRepository.findAllPublishedWithText(
+                        text, categories, paid, start, end, onlyAvailable, pageable);
+            } else {
+                eventsPage = eventRepository.findAllPublishedWithTextWithoutEnd(
+                        text, categories, paid, start, onlyAvailable, pageable);
+            }
+        } else {
+            if (end != null) {
+                eventsPage = eventRepository.findAllPublishedWithoutText(
+                        categories, paid, start, end, onlyAvailable, pageable);
+            } else {
+                eventsPage = eventRepository.findAllPublishedWithoutTextWithoutEnd(
+                        categories, paid, start, onlyAvailable, pageable);
+            }
+        }
+
+        eventsPage.forEach(event -> {
+            int currentViews = (event.getViews() == null) ? 0 : event.getViews();
+            event.setViews(currentViews + 1);
+        });
 
         return eventsPage.stream()
                 .map(EventMapper::mapToEventShortDto)
@@ -302,18 +345,20 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventFullDto getEventByIdPublic(Integer id) {
+    public EventFullDto getEventByIdPublic(Long id) {
         Event event = validateEvent(id);
 
         if (event.getState().equals(EventState.PUBLISHED)) {
+            int currentViews = (event.getViews() == null) ? 0 : event.getViews();
+            event.setViews(currentViews + 1);
             return EventMapper.mapToEventFullDto(eventRepository.findByIdAndState(id, EventState.PUBLISHED));
         } else {
-            throw new BadRequestException(String.format("Событие с id = %d не опубликовано!", id));
+            throw new NotFoundException(String.format("Событие с id = %d не опубликовано!", id));
         }
     }
 
     @Override
-    public Collection<ParticipationRequestDto> getParticipationRequestDtoByUserId(Integer userId) {
+    public Collection<ParticipationRequestDto> getParticipationRequestDtoByUserId(Long userId) {
         validateUser(userId);
         List<ParticipationRequest> participationRequests = participationRequestRepository.findByRequesterId(userId);
 
@@ -324,10 +369,10 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public ParticipationRequestDto createParticipationRequest(Integer userId, Integer eventId) {
+    public ParticipationRequestDto createParticipationRequest(Long userId, Long eventId) {
         User requester = validateUser(userId);
         Event event = validateEvent(eventId);
-        if (participationRequestRepository.existByIdAndRequesterId(eventId, userId)) {
+        if (participationRequestRepository.existsByEventIdAndRequesterId(eventId, userId)) {
             throw new ConflictException("Нельзя добавить повторный запрос!");
         }
 
@@ -339,8 +384,9 @@ public class EventServiceImpl implements EventService {
             throw new ConflictException("Нельзя участвовать в неопубликованном событии.");
         }
 
-        int currentConfirmed = participationRequestRepository.findCountByEventId(eventId);
-        if (currentConfirmed >= event.getParticipantLimit()) {
+        int currentConfirmed =
+                participationRequestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+        if (event.getParticipantLimit() != 0 && currentConfirmed >= event.getParticipantLimit()) {
             throw new ConflictException("Уже достигнут лимит по заявкам на данное событие.");
         }
 
@@ -348,39 +394,49 @@ public class EventServiceImpl implements EventService {
                 .created(LocalDateTime.now())
                 .event(event)
                 .requester(requester)
+                .status((!event.getRequestModeration() || event.getParticipantLimit() == 0)
+                        ? RequestStatus.CONFIRMED
+                        : RequestStatus.PENDING)
                 .build();
-
-        if (event.getRequestModeration()) {
-            participationRequest.setStatus(RequestStatus.PENDING);
-        } else {
-            participationRequest.setStatus(RequestStatus.CONFIRMED);
-        }
 
         ParticipationRequest createdParticipationRequest = participationRequestRepository.save(participationRequest);
         log.debug("Запрос пользователя {} на участие в событии {} успешно добавлен.",
                 requester.getName(), event.getTitle());
+
+        if (createdParticipationRequest.getStatus().equals(RequestStatus.CONFIRMED)) {
+            int currentConfirmedRequests = (event.getConfirmedRequests() == null) ? 0 : event.getConfirmedRequests();
+            event.setConfirmedRequests(currentConfirmedRequests + 1);
+        }
 
         return ParticipationRequestMapper.mapToParticipationRequestDto(createdParticipationRequest);
     }
 
     @Override
     @Transactional
-    public ParticipationRequestDto cancelParticipationRequest(Integer userId, Integer requestId) {
+    public ParticipationRequestDto cancelParticipationRequest(Long userId, Long requestId) {
         validateUser(userId);
         ParticipationRequest participationRequest = validateRequest(requestId);
 
-        if (participationRequest.getRequester().getId().equals(userId)) {
-            participationRequest.setStatus(RequestStatus.CONFIRMED);
-        } else {
+        if (!participationRequest.getRequester().getId().equals(userId)) {
             throw new BadRequestException("Можно отменить только свою запись на событие!");
         }
 
-        ParticipationRequest updatedParticipationRequest = participationRequestRepository.save(participationRequest);
+        RequestStatus oldStatus = participationRequest.getStatus();
+        participationRequest.setStatus(RequestStatus.CANCELED);
 
-        return ParticipationRequestMapper.mapToParticipationRequestDto(updatedParticipationRequest);
+        if (oldStatus.equals(RequestStatus.CONFIRMED)) {
+            Event event = participationRequest.getEvent();
+            int currentConfirmedRequests = (event.getConfirmedRequests() == null) ? 0 : event.getConfirmedRequests();
+            event.setConfirmedRequests(currentConfirmedRequests - 1);
+        }
+        log.debug("Заявка пользователя {} на событие {} отменена",
+                participationRequest.getRequester().getName(),
+                participationRequest.getEvent().getTitle());
+
+        return ParticipationRequestMapper.mapToParticipationRequestDto(participationRequest);
     }
 
-    private Event getEventById(Integer userId, Integer eventId) {
+    private Event getEventById(Long userId, Long eventId) {
         validateUser(userId);
         validateEvent(eventId);
 
@@ -392,7 +448,7 @@ public class EventServiceImpl implements EventService {
         return event;
     }
 
-    private void validateRequestsBelongToEvent(List<ParticipationRequest> requests, Integer eventId) {
+    private void validateRequestsBelongToEvent(List<ParticipationRequest> requests, Long eventId) {
         for (ParticipationRequest request : requests) {
             if (!request.getEvent().getId().equals(eventId)) {
                 throw new BadRequestException(
@@ -404,7 +460,7 @@ public class EventServiceImpl implements EventService {
     }
 
     private void validateAllRequestsPending(List<ParticipationRequest> requests) {
-        List<Integer> nonPendingIds = requests.stream()
+        List<Long> nonPendingIds = requests.stream()
                 .filter(r -> r.getStatus() != RequestStatus.PENDING)
                 .map(ParticipationRequest::getId)
                 .toList();
@@ -418,22 +474,14 @@ public class EventServiceImpl implements EventService {
     }
 
     private void validateStartAndEndDate(LocalDateTime start, LocalDateTime end) {
-        if (start.isAfter(end)) {
+        if (end != null && start.isAfter(end)) {
             throw new BadRequestException("Дата начала не может быть позже даты окончания.");
-        }
-
-        if (start.isBefore(LocalDateTime.now()) || end.isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Дата начала и окончания не может быть из прошлого.");
         }
     }
 
-    private void validateIdsLists(List<Integer> ids, String fieldName) {
-        if (ids.isEmpty()) {
-            throw new BadRequestException("Список id не может быть пустым.");
-        }
-
-        if (ids.stream().anyMatch(Objects::isNull)) {
-            throw new BadRequestException(
+    private void validateIdsLists(List<Long> ids, String fieldName) {
+           if (ids.stream().anyMatch(Objects::isNull)) {
+               throw new BadRequestException(
                     String.format("Список '%s' содержит null значения.", fieldName)
             );
             }
@@ -453,7 +501,7 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private User validateUser(Integer userId) {
+    private User validateUser(Long userId) {
         if (userId == null) {
             throw new BadRequestException("UserId не может быть null.");
         }
@@ -462,7 +510,7 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Не найден пользователь с id: " + userId));
     }
 
-    private Event validateEvent(Integer eventId) {
+    private Event validateEvent(Long eventId) {
         if (eventId == null) {
             throw new BadRequestException("EventId не может быть null.");
         }
@@ -471,7 +519,7 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Не найдено событие с id: " + eventId));
     }
 
-    private ParticipationRequest validateRequest(Integer requestId) {
+    private ParticipationRequest validateRequest(Long requestId) {
         if (requestId == null) {
             throw new BadRequestException("RequestId не может быть null.");
         }
@@ -480,7 +528,11 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Не найден запрос с id: " + requestId));
     }
 
-    private Category validateCategory(Integer catId) {
+    private Category validateCategory(Long catId) {
+        if (catId == null) {
+            throw new BadRequestException("CategoryId не может быть null.");
+        }
+
         return categoryRepository.findById(catId)
                 .orElseThrow(() -> new NotFoundException("Не найдена категория с id: " + catId));
     }
@@ -501,9 +553,9 @@ public class EventServiceImpl implements EventService {
 
     private void validateEventDate(LocalDateTime eventDate) {
         if (eventDate.isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new ValidationException("Field: eventDate. " +
+            throw new BadRequestException("Field: eventDate. " +
                     "Error: должно содержать дату, которая еще не наступила. " +
-                    "Value: " + eventDate);
+                    "Value: " + eventDate.format(FORMATTER));
         }
     }
 }

@@ -1,22 +1,20 @@
 package ru.practicum.ewm.events.dao;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import ru.practicum.ewm.events.model.ParticipationRequest;
+import ru.practicum.ewm.events.model.RequestStatus;
 
 import java.util.List;
 
-public interface ParticipationRequestRepository extends JpaRepository<ParticipationRequest, Integer> {
+public interface ParticipationRequestRepository extends JpaRepository<ParticipationRequest, Long> {
 
-    List<ParticipationRequest> findByEventId(Integer eventId);
+    List<ParticipationRequest> findByEventId(Long eventId);
 
-    @Query("SELECT COUNT(pr) FROM ParticipationRequest pr " +
-            "WHERE pr.event.id = ?1 AND pr.status = 'CONFIRMED'")
-    int findCountByEventId(Integer eventId);
+    int countByEventIdAndStatus(Long eventId, RequestStatus status);
 
-    List<ParticipationRequest> findByIdIn(List<Integer> ids);
+    List<ParticipationRequest> findByIdIn(List<Long> ids);
 
-    List<ParticipationRequest> findByRequesterId(Integer requesterId);
+    List<ParticipationRequest> findByRequesterId(Long requesterId);
 
-    boolean existByIdAndRequesterId(Integer id, Integer requesterId);
+    boolean existsByEventIdAndRequesterId(Long eventId, Long requesterId);
 }

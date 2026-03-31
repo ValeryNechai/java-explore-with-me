@@ -1,8 +1,10 @@
 package ru.practicum.ewm.exception.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 @AllArgsConstructor
+@Getter
 public class ApiError {
     private ErrorStatus status;
     private String reason;

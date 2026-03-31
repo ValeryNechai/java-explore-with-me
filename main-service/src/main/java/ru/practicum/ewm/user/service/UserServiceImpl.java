@@ -41,8 +41,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteUser(Integer userId) {
-        if (!userRepository.existsByUserId(userId)) {
+    public void deleteUser(Long userId) {
+        if (!userRepository.existsById(userId)) {
             throw new NotFoundException(
                     String.format("Пользователь с id: %s не найден.", userId)
             );
@@ -53,10 +53,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Collection<UserDto> getUsers(List<Integer> ids, int from, int size) {
-        List<User> users = userRepository.findAllById(ids);
+    public Collection<UserDto> getUsers(List<Long> ids, int from, int size) {
+        List<User> users;
+        if (ids == null) {
+            users = userRepository.findAll();
+        } else {
+            users = userRepository.findAllById(ids);
+        }
 
-        validateIds(ids, users);
         validateFromAndSize(ids, from, size);
 
         return users.stream()
@@ -66,23 +70,8 @@ public class UserServiceImpl implements UserService {
                 .toList();
     }
 
-    private void validateIds(List<Integer> ids, List<User> users) {
-        if (users.size() != ids.size()) {
-            List<Integer> foundIds = users.stream()
-                    .map(User::getId)
-                    .toList();
-            List<Integer> notFoundIds = ids.stream()
-                    .filter(id -> !foundIds.contains(id))
-                    .toList();
-
-            throw new BadRequestException(
-                    String.format("BadRequest: пользователи с id = %s не найдены.", notFoundIds)
-            );
-        }
-    }
-
-    private void validateFromAndSize(List<Integer> ids, int from, int size) {
-        if (from > ids.size()) {
+    private void validateFromAndSize(List<Long> ids, int from, int size) {
+        if (ids != null && from > ids.size()) {
             throw new BadRequestException(
                     String.format("BadRequest: from = %d, что больше списка длины ids = %d.", from, ids.size())
             );

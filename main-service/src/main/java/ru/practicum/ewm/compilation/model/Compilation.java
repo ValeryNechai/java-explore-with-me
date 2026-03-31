@@ -18,9 +18,10 @@ import java.util.List;
 public class Compilation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "events_compilations",
             joinColumns = @JoinColumn(name = "compilation_id"),

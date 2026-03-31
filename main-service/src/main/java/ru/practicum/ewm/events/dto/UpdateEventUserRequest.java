@@ -1,26 +1,32 @@
 package ru.practicum.ewm.events.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
+import lombok.*;
 import ru.practicum.ewm.events.model.EventUserStateAction;
 import ru.practicum.ewm.events.model.Location;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class UpdateEventUserRequest {
     @Size(min = 20, max = 2000, message = "Краткое описание события должно быть от 20 до 2000 символов.")
     private String annotation;
 
     @PositiveOrZero
-    private Integer categoryId;
+    private Long categoryId;
 
     @Size(min = 20, max = 7000, message = "Полное описание события должно быть от 20 до 7000 символов.")
     private String description;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Future(message = "Дата события должна быть в будущем")
     private LocalDateTime eventDate;
 
     private Location location;
@@ -32,6 +38,7 @@ public class UpdateEventUserRequest {
 
     private Boolean requestModeration;
 
+    @JsonProperty("stateAction")
     private EventUserStateAction stateAction;
 
     @Size(min = 3, max = 120, message = "Заголовок события должен быть от 3 до 120 символов.")

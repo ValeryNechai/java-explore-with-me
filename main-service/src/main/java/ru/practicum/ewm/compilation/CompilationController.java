@@ -3,6 +3,7 @@ package ru.practicum.ewm.compilation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.compilation.dto.CompilationDto;
 import ru.practicum.ewm.compilation.dto.NewCompilationDto;
@@ -14,12 +15,13 @@ import java.util.Collection;
 @RestController
 @RequestMapping
 @RequiredArgsConstructor
+@Validated
 public class CompilationController {
     private final CompilationService compilationService;
 
     @GetMapping("/compilations")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<CompilationDto> getAllCompilations(@RequestParam Boolean pinned,
+    public Collection<CompilationDto> getAllCompilations(@RequestParam(required = false) Boolean pinned,
                                                          @RequestParam(defaultValue = "0") int from,
                                                          @RequestParam(defaultValue = "10") int size) {
         return compilationService.getAllCompilations(pinned, from, size);
@@ -27,7 +29,7 @@ public class CompilationController {
 
     @GetMapping("/compilations/{compId}")
     @ResponseStatus(HttpStatus.OK)
-    public CompilationDto getCompilationById(@PathVariable Integer compId) {
+    public CompilationDto getCompilationById(@PathVariable Long compId) {
         return compilationService.getCompilationById(compId);
     }
 
@@ -39,13 +41,13 @@ public class CompilationController {
 
     @DeleteMapping("/admin/compilations/{compId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteCompilation(@PathVariable Integer compId) {
+    public void deleteCompilation(@PathVariable Long compId) {
         compilationService.deleteCompilation(compId);
     }
 
     @PatchMapping("/admin/compilations/{compId}")
     @ResponseStatus(HttpStatus.OK)
-    public CompilationDto updateCompilation(@PathVariable Integer compId,
+    public CompilationDto updateCompilation(@PathVariable Long compId,
                                             @RequestBody @Valid UpdateCompilationRequest request) {
         return compilationService.updateCompilation(compId, request);
     }

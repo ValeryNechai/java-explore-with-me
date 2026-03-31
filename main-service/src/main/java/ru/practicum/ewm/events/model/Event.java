@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 public class Event {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     private String annotation;
 
@@ -41,7 +41,7 @@ public class Event {
     @JoinColumn(name = "initiator_id")
     private User initiator;
 
-    @OneToOne(mappedBy = "event", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Embedded
     private Location location;
 
     private Boolean paid;
@@ -56,6 +56,7 @@ public class Event {
     private Boolean requestModeration;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "state")
     private EventState state;
 
     private String title;

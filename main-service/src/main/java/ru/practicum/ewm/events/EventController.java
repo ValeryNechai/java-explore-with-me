@@ -1,24 +1,33 @@
 package ru.practicum.ewm.events;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.ewm.client.StatsClient;
+import ru.practicum.ewm.dto.NewStatsRequest;
 import ru.practicum.ewm.events.dto.*;
 import ru.practicum.ewm.events.service.EventService;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping
+@Validated
+@Slf4j
 public class EventController {
     private final EventService eventService;
+    private final StatsClient statsClient;
 
     @GetMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<EventShortDto> getEventsByUserId(@PathVariable Integer userId,
+    public Collection<EventShortDto> getEventsByUserId(@PathVariable Long userId,
                                                        @RequestParam(defaultValue = "0") int from,
                                                        @RequestParam(defaultValue = "10") int size) {
         return eventService.getEventsByUserId(userId, from, size);
@@ -26,50 +35,58 @@ public class EventController {
 
     @PostMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.CREATED)
-    public EventFullDto createEvent(@PathVariable Integer userId,
-                                    @RequestBody NewEventDto request) {
+    public EventFullDto createEvent(@PathVariable Long userId,
+                                    @RequestBody @Valid NewEventDto request) {
         return eventService.createEvent(userId, request);
     }
 
     @GetMapping("/users/{userId}/events/{eventId}")
     @ResponseStatus(HttpStatus.OK)
-    public EventFullDto getEventById(@PathVariable Integer userId,
-                                     @PathVariable Integer eventId) {
+    public EventFullDto getEventById(@PathVariable Long userId,
+                                     @PathVariable Long eventId) {
         return eventService.getEventDtoById(userId, eventId);
     }
 
     @PatchMapping("/users/{userId}/events/{eventId}")
     @ResponseStatus(HttpStatus.OK)
-    public EventFullDto updateEventUser(@PathVariable Integer userId,
-                                        @PathVariable Integer eventId,
-                                        @RequestBody @Valid UpdateEventUserRequest request) {
+    public EventFullDto updateEventUser(@PathVariable Long userId,
+                                        @PathVariable Long eventId,
+                                        @Valid @RequestBody UpdateEventUserRequest request) {
+
+        log.info("Получен запрос на обновление события от пользователя: userId={}, eventId={}, body={}",
+                userId, eventId, request);
+
+        if (request == null) {
+            log.warn("Тело запроса на обновление пустое!");
+        }
+
         return eventService.updateEventUser(userId, eventId, request);
     }
 
     @GetMapping("/users/{userId}/events/{eventId}/requests")
     @ResponseStatus(HttpStatus.OK)
     public Collection<ParticipationRequestDto> getParticipationRequestsByUserIdAndEventId(
-            @PathVariable Integer userId,
-            @PathVariable Integer eventId) {
+            @PathVariable Long userId,
+            @PathVariable Long eventId) {
         return eventService.getParticipationRequestsByUserIdAndEventId(userId, eventId);
     }
 
     @PatchMapping("/users/{userId}/events/{eventId}/requests")
     @ResponseStatus(HttpStatus.OK)
     public EventRequestStatusUpdateResult updateEventRequestStatus(
-            @PathVariable Integer userId,
-            @PathVariable Integer eventId,
+            @PathVariable Long userId,
+            @PathVariable Long eventId,
             @RequestBody @Valid EventRequestStatusUpdateRequest request) {
         return eventService.updateEventRequestStatus(userId, eventId, request);
     }
 
     @GetMapping("/admin/events")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<EventFullDto> getAllEventsAdmin(@RequestParam List<Integer> users,
-                                                      @RequestParam List<String> states,
-                                                      @RequestParam List<Integer> categories,
-                                                      @RequestParam String rangeStart,
-                                                      @RequestParam String rangeEnd,
+    public Collection<EventFullDto> getAllEventsAdmin(@RequestParam(required = false) List<Long> users,
+                                                      @RequestParam(required = false) List<String> states,
+                                                      @RequestParam(required = false) List<Long> categories,
+                                                      @RequestParam(required = false) String rangeStart,
+                                                      @RequestParam(required = false) String rangeEnd,
                                                       @RequestParam(defaultValue = "0") int from,
                                                       @RequestParam(defaultValue = "10") int size) {
         return eventService.getAllEventsByParameters(users, states, categories, rangeStart, rangeEnd, from, size);
@@ -77,22 +94,30 @@ public class EventController {
 
     @PatchMapping("/admin/events/{eventId}")
     @ResponseStatus(HttpStatus.OK)
-    public EventFullDto updateEventAdmin(@PathVariable Integer eventId,
+    public EventFullDto updateEventAdmin(@PathVariable Long eventId,
                                          @RequestBody @Valid UpdateEventAdminRequest request) {
         return eventService.updateEventAdmin(eventId, request);
     }
 
     @GetMapping("/events")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<EventShortDto> getAllEventsPublic(@RequestParam String text,
-                                                        @RequestParam List<Integer> categories,
-                                                        @RequestParam Boolean paid,
-                                                        @RequestParam String rangeStart,
-                                                        @RequestParam String rangeEnd,
+    public Collection<EventShortDto> getAllEventsPublic(@RequestParam(required = false) String text,
+                                                        @RequestParam(required = false) List<Long> categories,
+                                                        @RequestParam(required = false) Boolean paid,
+                                                        @RequestParam(required = false) String rangeStart,
+                                                        @RequestParam(required = false) String rangeEnd,
                                                         @RequestParam(defaultValue = "false") boolean onlyAvailable,
-                                                        @RequestParam String sort,
+                                                        @RequestParam(required = false) String sort,
                                                         @RequestParam(defaultValue = "0") int from,
-                                                        @RequestParam(defaultValue = "10") int size) {
+                                                        @RequestParam(defaultValue = "10") int size,
+                                                        HttpServletRequest request) {
+        statsClient.saveStats(NewStatsRequest.builder()
+                .app("ewm-main-service")
+                .uri(request.getRequestURI())
+                .ip(request.getRemoteAddr())
+                .timestamp(LocalDateTime.now())
+                .build());
+
         return eventService.getAllEventsPublic(
                 text,
                 categories,
@@ -108,27 +133,35 @@ public class EventController {
 
     @GetMapping("/events/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public EventFullDto getEventByIdPublic(@PathVariable Integer id) {
+    public EventFullDto getEventByIdPublic(@PathVariable Long id,
+                                           HttpServletRequest request) {
+        statsClient.saveStats(NewStatsRequest.builder()
+                .app("ewm-main-service")
+                .uri(request.getRequestURI())
+                .ip(request.getRemoteAddr())
+                .timestamp(LocalDateTime.now())
+                .build());
+
         return eventService.getEventByIdPublic(id);
     }
 
     @GetMapping("/users/{userId}/requests")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<ParticipationRequestDto> getParticipationRequestDtoByUserId(@PathVariable Integer userId) {
+    public Collection<ParticipationRequestDto> getParticipationRequestDtoByUserId(@PathVariable Long userId) {
         return eventService.getParticipationRequestDtoByUserId(userId);
     }
 
     @PostMapping("/users/{userId}/requests")
     @ResponseStatus(HttpStatus.CREATED)
-    public ParticipationRequestDto createParticipationRequest(@PathVariable Integer userId,
-                                                              @RequestParam Integer eventId) {
+    public ParticipationRequestDto createParticipationRequest(@PathVariable Long userId,
+                                                              @RequestParam Long eventId) {
         return eventService.createParticipationRequest(userId, eventId);
     }
 
     @PatchMapping("/users/{userId}/requests/{requestId}/cancel")
     @ResponseStatus(HttpStatus.OK)
-    public ParticipationRequestDto cancelParticipationRequest(@PathVariable Integer userId,
-                                                              @PathVariable Integer requestId) {
+    public ParticipationRequestDto cancelParticipationRequest(@PathVariable Long userId,
+                                                              @PathVariable Long requestId) {
         return eventService.cancelParticipationRequest(userId, requestId);
     }
 }

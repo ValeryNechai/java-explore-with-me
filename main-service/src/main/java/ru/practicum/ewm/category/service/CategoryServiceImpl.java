@@ -38,7 +38,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public void deleteCategory(Integer catId) {
+    public void deleteCategory(Long catId) {
         int countEventsByCategory = categoryRepository.findEventsCountByCategories(catId);
         if (countEventsByCategory > 0) {
             throw new ConflictException(
@@ -54,13 +54,19 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public CategoryDto updateCategory(Integer catId, NewCategoryDto request) {
+    public CategoryDto updateCategory(Long catId, NewCategoryDto request) {
         validateCategoryId(catId);
-        validateCategoryName(request.getName());
+        Category category = categoryRepository.findById(catId).orElseThrow(() -> new NotFoundException(
+                String.format("Категория с id: %s не найдена.", catId)));
 
-        Category category = CategoryMapper.mapToCategory(request);
+        if (!category.getName().equals(request.getName())) {
+            validateCategoryName(request.getName());
+        }
 
-        Category updatedCategory = categoryRepository.save(category);
+        Category newCategory = CategoryMapper.mapToCategory(request);
+        newCategory.setId(catId);
+
+        Category updatedCategory = categoryRepository.save(newCategory);
         log.debug("Категория {} успешно обновлена.", updatedCategory.getName());
 
         return CategoryMapper.mapToCategoryDto(updatedCategory);
@@ -79,7 +85,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public CategoryDto getCategoryById(Integer catId) {
+    public CategoryDto getCategoryById(Long catId) {
         Category category = categoryRepository.findById(catId)
                 .orElseThrow(() -> new NotFoundException(
                         String.format("Категория с id: %s не найдена.", catId)
@@ -96,7 +102,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
     }
 
-    private void validateCategoryId(Integer catId) {
+    private void validateCategoryId(Long catId) {
         if (!categoryRepository.existsById(catId)) {
             throw new NotFoundException(
                     String.format("Категория с id: %s не найдена.", catId)

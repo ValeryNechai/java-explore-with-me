@@ -3,7 +3,10 @@ package ru.practicum.ewm.exception.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -67,6 +70,45 @@ public class ErrorHandler {
     public ApiError handleBadRequest(final MethodArgumentNotValidException exception) {
         log.warn("MethodArgumentNotValidException: {}", exception.getMessage());
 
+        return new ApiError(
+                ErrorStatus.BAD_REQUEST,
+                "Incorrectly made request.",
+                exception.getMessage(),
+                LocalDateTime.now().format(FORMATTER)
+        );
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
+        String message = String.format("Переменная %s должна быть типа %s",
+                exception.getName(), exception.getRequiredType().getSimpleName());
+        log.warn("MethodArgumentTypeMismatchException: {}", message);
+
+        return new ApiError(
+                ErrorStatus.BAD_REQUEST,
+                "Incorrectly made request.",
+                message,
+                LocalDateTime.now().format(FORMATTER)
+        );
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleHttpMessageNotReadable(final HttpMessageNotReadableException exception) {
+        log.warn("HttpMessageNotReadableException: {}", exception.getMessage());
+        return new ApiError(
+                ErrorStatus.BAD_REQUEST,
+                "Incorrectly made request.",
+                exception.getMessage(),
+                LocalDateTime.now().format(FORMATTER)
+        );
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleMissingParams(MissingServletRequestParameterException exception) {
+        log.warn("Missing parameters: {}", exception.getMessage());
         return new ApiError(
                 ErrorStatus.BAD_REQUEST,
                 "Incorrectly made request.",

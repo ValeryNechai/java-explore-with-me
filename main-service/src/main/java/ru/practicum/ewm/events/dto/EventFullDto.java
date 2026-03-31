@@ -16,14 +16,18 @@ public class EventFullDto {
     private String createdOn;
     private String description;
     private String eventDate;
-    private Integer id;
+    private Long id;
     private UserShortDto initiator;
     private Location location;
-    private boolean paid;
-    private int participantLimit;
+    private Boolean paid;
+    private Integer participantLimit;
     private String publishedOn;
-    private boolean requestModeration;
+    private Boolean requestModeration;
     private EventState state;
     private String title;
-    private int views;
+    private Integer views;
+
+    public Integer getConfirmedRequests() {
+        return confirmedRequests == null ? 0 : confirmedRequests;
+    }
 }

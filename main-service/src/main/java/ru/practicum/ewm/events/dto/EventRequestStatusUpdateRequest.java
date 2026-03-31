@@ -11,7 +11,7 @@ import java.util.List;
 public class EventRequestStatusUpdateRequest {
     @NotNull(message = "IDs запросов не могут быть null.")
     @NotEmpty(message = "Список IDs запросов не может быть пуст.")
-    private List<Integer> requestIds;
+    private List<Long> requestIds;
 
     @NotNull(message = "Статус не может быть null.")
     private EventRequestStatus status;
