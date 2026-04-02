@@ -1,6 +1,7 @@
-package ru.practicum.ewm.events.service;
+package ru.practicum.ewm.event.service;
 
-import ru.practicum.ewm.events.dto.*;
+import jakarta.servlet.http.HttpServletRequest;
+import ru.practicum.ewm.event.dto.*;
 
 import java.util.Collection;
 import java.util.List;
@@ -38,9 +39,10 @@ public interface EventService {
                                                  boolean onlyAvailable,
                                                  String sort,
                                                  int from,
-                                                 int size);
+                                                 int size,
+                                                 HttpServletRequest request);
 
-    EventFullDto getEventByIdPublic(Long id);
+    EventFullDto getEventByIdPublic(Long id, HttpServletRequest request);
 
     Collection<ParticipationRequestDto> getParticipationRequestDtoByUserId(Long userId);
 

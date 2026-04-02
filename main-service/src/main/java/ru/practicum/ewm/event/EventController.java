@@ -1,4 +1,4 @@
-package ru.practicum.ewm.events;
+package ru.practicum.ewm.event;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -7,12 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewm.client.StatsClient;
-import ru.practicum.ewm.dto.NewStatsRequest;
-import ru.practicum.ewm.events.dto.*;
-import ru.practicum.ewm.events.service.EventService;
+import ru.practicum.ewm.event.dto.*;
+import ru.practicum.ewm.event.service.EventService;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -23,7 +20,6 @@ import java.util.List;
 @Slf4j
 public class EventController {
     private final EventService eventService;
-    private final StatsClient statsClient;
 
     @GetMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.OK)
@@ -111,13 +107,6 @@ public class EventController {
                                                         @RequestParam(defaultValue = "0") int from,
                                                         @RequestParam(defaultValue = "10") int size,
                                                         HttpServletRequest request) {
-        statsClient.saveStats(NewStatsRequest.builder()
-                .app("ewm-main-service")
-                .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
-                .timestamp(LocalDateTime.now())
-                .build());
-
         return eventService.getAllEventsPublic(
                 text,
                 categories,
@@ -127,7 +116,8 @@ public class EventController {
                 onlyAvailable,
                 sort,
                 from,
-                size
+                size,
+                request
         );
     }
 
@@ -135,14 +125,7 @@ public class EventController {
     @ResponseStatus(HttpStatus.OK)
     public EventFullDto getEventByIdPublic(@PathVariable Long id,
                                            HttpServletRequest request) {
-        statsClient.saveStats(NewStatsRequest.builder()
-                .app("ewm-main-service")
-                .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
-                .timestamp(LocalDateTime.now())
-                .build());
-
-        return eventService.getEventByIdPublic(id);
+        return eventService.getEventByIdPublic(id, request);
     }
 
     @GetMapping("/users/{userId}/requests")

@@ -12,6 +12,8 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.ewm.dto.NewStatsRequest;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +22,8 @@ public class StatsClient {
     private final RestTemplate rest;
     private static final String API_PREFIX_POST = "/hit";
     private static final String API_PREFIX_GET = "/stats";
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public StatsClient(@Value("${stats-server.url}") String serverUrl, RestTemplateBuilder builder) {
         this.rest = builder.uriTemplateHandler(new DefaultUriBuilderFactory(serverUrl))
@@ -32,13 +36,21 @@ public class StatsClient {
     }
 
     public ResponseEntity<Object> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
-        Map<String, Object> parameters = Map.of(
-                "start", start,
-                "end", end,
-                "uris", String.join(",", uris),
-                "unique", unique
-        );
-        return makeAndSendRequest(HttpMethod.GET, "" + API_PREFIX_GET, parameters, null);
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("start", start.format(FORMATTER));
+        parameters.put("end", end.format(FORMATTER));
+        parameters.put("unique", unique);
+
+        StringBuilder pathBuilder = new StringBuilder(API_PREFIX_GET)
+                .append("?start={start}&end={end}&unique={unique}");
+
+        if (uris != null && !uris.isEmpty()) {
+            parameters.put("uris", String.join(",", uris));
+            pathBuilder.append("&uris={uris}");
+        }
+
+        return makeAndSendRequest(HttpMethod.GET, pathBuilder.toString(), parameters, null);
+
     }
 
     private <T> ResponseEntity<Object> makeAndSendRequest(

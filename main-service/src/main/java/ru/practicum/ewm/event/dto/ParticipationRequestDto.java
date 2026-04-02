@@ -1,9 +1,9 @@
-package ru.practicum.ewm.events.dto;
+package ru.practicum.ewm.event.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
-import ru.practicum.ewm.events.model.RequestStatus;
+import ru.practicum.ewm.event.model.RequestStatus;
 
 import java.time.LocalDateTime;
 

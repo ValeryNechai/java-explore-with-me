@@ -1,4 +1,4 @@
-package ru.practicum.ewm.events.dto;
+package ru.practicum.ewm.event.dto;
 
 import lombok.Builder;
 import lombok.Data;

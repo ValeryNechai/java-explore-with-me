@@ -1,24 +1,27 @@
-package ru.practicum.ewm.events.dao;
+package ru.practicum.ewm.event.dao;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import ru.practicum.ewm.events.model.Event;
-import ru.practicum.ewm.events.model.EventState;
+import ru.practicum.ewm.event.model.Event;
+import ru.practicum.ewm.event.model.EventState;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
-
+    @EntityGraph(attributePaths = {"initiator", "category"})
     Page<Event> findByInitiatorId(Long userId, Pageable pageable);
 
     Event findByIdAndInitiatorId(Long id, Long initiatorId);
 
-    @Query("SELECT e FROM Event e WHERE " +
-            "(:users IS NULL OR e.initiator.id IN :users) " +
+    @Query("SELECT e FROM Event e " +
+            "JOIN FETCH e.category " +
+            "JOIN FETCH e.initiator " +
+            "WHERE (:users IS NULL OR e.initiator.id IN :users) " +
             "AND (:states IS NULL OR e.state IN :states) " +
             "AND (:categories IS NULL OR e.category.id IN :categories) " +
             "AND (e.eventDate >= :startDate) " +
@@ -31,8 +34,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable);
 
-    @Query("SELECT e FROM Event e WHERE " +
-            "(:users IS NULL OR e.initiator.id IN :users) " +
+    @Query("SELECT e FROM Event e " +
+            "JOIN FETCH e.category " +
+            "JOIN FETCH e.initiator " +
+            "WHERE (:users IS NULL OR e.initiator.id IN :users) " +
             "AND (:states IS NULL OR e.state IN :states) " +
             "AND (:categories IS NULL OR e.category.id IN :categories) " +
             "AND (e.eventDate >= :startDate)")
@@ -44,6 +49,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             Pageable pageable);
 
     @Query("SELECT e FROM Event e " +
+            "JOIN FETCH e.category " +
+            "JOIN FETCH e.initiator " +
             "WHERE e.state = 'PUBLISHED' " +
             "AND (:text IS NULL OR lower(e.annotation) LIKE lower(concat('%', :text, '%')) OR " +
             "     lower(e.description) LIKE lower(concat('%', :text, '%'))) " +
@@ -61,6 +68,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                          Pageable pageable);
 
     @Query("SELECT e FROM Event e " +
+            "JOIN FETCH e.category " +
+            "JOIN FETCH e.initiator " +
             "WHERE e.state = 'PUBLISHED' " +
             "AND (:categories IS NULL OR e.category.id IN :categories) " +
             "AND (:paid IS NULL OR e.paid = :paid) " +
@@ -75,6 +84,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                             Pageable pageable);
 
     @Query("SELECT e FROM Event e " +
+            "JOIN FETCH e.category " +
+            "JOIN FETCH e.initiator " +
             "WHERE e.state = 'PUBLISHED' " +
             "AND (:text IS NULL OR lower(e.annotation) LIKE lower(concat('%', :text, '%')) OR " +
             "     lower(e.description) LIKE lower(concat('%', :text, '%'))) " +
@@ -90,6 +101,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                          Pageable pageable);
 
     @Query("SELECT e FROM Event e " +
+            "JOIN FETCH e.category " +
+            "JOIN FETCH e.initiator " +
             "WHERE e.state = 'PUBLISHED' " +
             "AND (:categories IS NULL OR e.category.id IN :categories) " +
             "AND (:paid IS NULL OR e.paid = :paid) " +
@@ -101,7 +114,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                             @Param("onlyAvailable") boolean onlyAvailable,
                                             Pageable pageable);
 
+    @EntityGraph(attributePaths = {"initiator", "category"})
     Event findByIdAndState(Long id, EventState state);
 
+    @EntityGraph(attributePaths = {"initiator", "category"})
     List<Event> findByIdIn(List<Long> ids);
 }

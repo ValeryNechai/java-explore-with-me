@@ -1,9 +1,9 @@
-package ru.practicum.ewm.events.dto;
+package ru.practicum.ewm.event.dto;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import ru.practicum.ewm.events.model.EventRequestStatus;
+import ru.practicum.ewm.event.model.EventRequestStatus;
 
 import java.util.List;
 
