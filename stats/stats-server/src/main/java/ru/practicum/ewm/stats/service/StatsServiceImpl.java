@@ -42,10 +42,12 @@ public class StatsServiceImpl implements StatsService {
     @Override
     public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
         validateStats(start, end, uris);
+        List<String> urisToSearch = (uris == null || uris.isEmpty()) ? null : uris;
+
         if (unique) {
-            return statsRepository.findUniqueStats(start, end, uris);
+            return statsRepository.findUniqueStats(start, end, urisToSearch);
         } else {
-            return statsRepository.findStats(start, end, uris);
+            return statsRepository.findStats(start, end, urisToSearch);
         }
     }
 

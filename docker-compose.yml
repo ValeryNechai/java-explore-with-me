@@ -9,8 +9,8 @@ services:
       - stats-db
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/ewm-stats
-      - SPRING_DATASOURCE_USERNAME=stats
-      - SPRING_DATASOURCE_PASSWORD=stats
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=12345
 
   stats-db:
     image: postgres:16.1
@@ -18,8 +18,8 @@ services:
     ports:
       - "5433:5432"
     environment:
-      - POSTGRES_PASSWORD=stats
-      - POSTGRES_USER=stats
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_USER=postgres
       - POSTGRES_DB=ewm-stats
     volumes:
       - ./stats/stats-server/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/init.sql
@@ -34,16 +34,18 @@ services:
       - ewm-db
       - stats-server
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm
-      - SPRING_DATASOURCE_USERNAME=main
-      - SPRING_DATASOURCE_PASSWORD=main
-      - STATS_SERVER_URI=http://stats-server:9090
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-main
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=12345
+      - STATS_SERVER_URL=http://stats-server:9090
       - JAVA_OPTS=-Djdk.httpclient.HttpClient.log=errors,requests
 
   ewm-db:
     image: postgres:16.1
     container_name: postgres-ewm-main-db
+    ports:
+      - "5434:5432"
     environment:
-      - POSTGRES_PASSWORD=main
-      - POSTGRES_USER=main
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_USER=postgres
       - POSTGRES_DB=ewm-main
