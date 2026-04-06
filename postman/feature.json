@@ -1,0 +1,817 @@
+{
+  "info": {
+    "_postman_id": "ffed687b-77eb-4849-b6bc-3c1079ab9efa",
+    "name": "feature",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "49334118",
+    "_collection_link": "https://go.postman.co/collection/49334118-ffed687b-77eb-4849-b6bc-3c1079ab9efa?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Добавление лайка к событию",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ является объектом\", function () {\r",
+              "    pm.expect(target).to.be.an('object');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинг должен содержать поля: eventId, userId, isLike, created\", function () {\r",
+              "    pm.expect(target).to.have.property('eventId');\r",
+              "    pm.expect(target).to.have.property('userId');\r",
+              "    pm.expect(target).to.have.property('isLike');\r",
+              "    pm.expect(target).to.have.property('created');\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/6/rating/2?isLike=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "6",
+            "rating",
+            "2"
+          ],
+          "query": [
+            {
+              "key": "isLike",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Попытка повторно поставить LIKE к событию",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 400 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.badRequest;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/6/rating/2?isLike=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "6",
+            "rating",
+            "2"
+          ],
+          "query": [
+            {
+              "key": "isLike",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Добавление дизлайка событию",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ является объектом\", function () {\r",
+              "    pm.expect(target).to.be.an('object');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинг должен содержать поля: eventId, userId, isLike, created\", function () {\r",
+              "    pm.expect(target).to.have.property('eventId');\r",
+              "    pm.expect(target).to.have.property('userId');\r",
+              "    pm.expect(target).to.have.property('isLike');\r",
+              "    pm.expect(target).to.have.property('created');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"При добавлении дизлайка isLike = false\", function () {\r",
+              "    pm.expect(target.isLike).to.equal(false); \r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/6/rating/3?isLike=false",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "6",
+            "rating",
+            "3"
+          ],
+          "query": [
+            {
+              "key": "isLike",
+              "value": "false"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Добавление лайка событию, которому ранее поставлен дизлайк",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ является объектом\", function () {\r",
+              "    pm.expect(target).to.be.an('object');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинг должен содержать поля: eventId, userId, isLike, created\", function () {\r",
+              "    pm.expect(target).to.have.property('eventId');\r",
+              "    pm.expect(target).to.have.property('userId');\r",
+              "    pm.expect(target).to.have.property('isLike');\r",
+              "    pm.expect(target).to.have.property('created');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"При добавлении лайка isLike = true\", function () {\r",
+              "    pm.expect(target.isLike).to.equal(true); \r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/6/rating/3?isLike=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "6",
+            "rating",
+            "3"
+          ],
+          "query": [
+            {
+              "key": "isLike",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Просмотр полной информации о рейтинге события",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ является объектом\", function () {\r",
+              "    pm.expect(target).to.be.an('object');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Полная информация о рейтинге должна содержать поля: likes, dislikes, rating\", function () {\r",
+              "    pm.expect(target).to.have.property('likes');\r",
+              "    pm.expect(target).to.have.property('dislikes');\r",
+              "    pm.expect(target).to.have.property('rating');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Количестко лайков у события с id = 6 должно быть равно 2\", function () {\r",
+              "    pm.expect(target.likes).to.equal(2);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинг у события с id = 6 должен быть равен 2\", function () {\r",
+              "    pm.expect(target.rating).to.equal(2);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/rating/event/6",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "rating",
+            "event",
+            "6"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Удаление лайка с события",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 204\", function () {\r",
+              "    pm.response.to.have.status(204);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/6/rating/3",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "6",
+            "rating",
+            "3"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Просмотр полной информации о рейтинге события после удаления лайка",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ является объектом\", function () {\r",
+              "    pm.expect(target).to.be.an('object');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Полная информация о рейтинге должна содержать поля: likes, dislikes, rating\", function () {\r",
+              "    pm.expect(target).to.have.property('likes');\r",
+              "    pm.expect(target).to.have.property('dislikes');\r",
+              "    pm.expect(target).to.have.property('rating');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Количестко лайков у события с id = 6 должно быть равно 1\", function () {\r",
+              "    pm.expect(target.likes).to.equal(1);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинг у события с id = 6 должен быть равен 1\", function () {\r",
+              "    pm.expect(target.rating).to.equal(1);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/rating/event/6",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "rating",
+            "event",
+            "6"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Попытка удалить несуществующий лайк",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 400\", function () {\r",
+              "    pm.response.to.have.status(400);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/6/rating/5",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "6",
+            "rating",
+            "5"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Добавление лайка событию",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ является объектом\", function () {\r",
+              "    pm.expect(target).to.be.an('object');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинг должен содержать поля: eventId, userId, isLike, created\", function () {\r",
+              "    pm.expect(target).to.have.property('eventId');\r",
+              "    pm.expect(target).to.have.property('userId');\r",
+              "    pm.expect(target).to.have.property('isLike');\r",
+              "    pm.expect(target).to.have.property('created');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"При добавлении лайка isLike = true\", function () {\r",
+              "    pm.expect(target.isLike).to.equal(true); \r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/2/rating/3?isLike=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "2",
+            "rating",
+            "3"
+          ],
+          "query": [
+            {
+              "key": "isLike",
+              "value": "true",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Добавление лайка событию",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ является объектом\", function () {\r",
+              "    pm.expect(target).to.be.an('object');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинг должен содержать поля: eventId, userId, isLike, created\", function () {\r",
+              "    pm.expect(target).to.have.property('eventId');\r",
+              "    pm.expect(target).to.have.property('userId');\r",
+              "    pm.expect(target).to.have.property('isLike');\r",
+              "    pm.expect(target).to.have.property('created');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"При добавлении лайка isLike = true\", function () {\r",
+              "    pm.expect(target.isLike).to.equal(true); \r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/6/rating/3?isLike=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "6",
+            "rating",
+            "3"
+          ],
+          "query": [
+            {
+              "key": "isLike",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Добавление дизлайка событию",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ является объектом\", function () {\r",
+              "    pm.expect(target).to.be.an('object');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинг должен содержать поля: eventId, userId, isLike, created\", function () {\r",
+              "    pm.expect(target).to.have.property('eventId');\r",
+              "    pm.expect(target).to.have.property('userId');\r",
+              "    pm.expect(target).to.have.property('isLike');\r",
+              "    pm.expect(target).to.have.property('created');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"При добавлении дизлайка isLike = false\", function () {\r",
+              "    pm.expect(target.isLike).to.equal(false); \r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/2/rating/4?isLike=false",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "2",
+            "rating",
+            "4"
+          ],
+          "query": [
+            {
+              "key": "isLike",
+              "value": "false"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Формирование рейтинга мероприятий",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ должен быть непустым массивом\", function () {\r",
+              "    pm.expect(target).to.be.an('array').that.is.not.empty;\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинги мероприятий должны содержать поля: eventId, title, categoryName, initiatorName, rating\", function () {\r",
+              "    pm.expect(target[0]).to.have.property('eventId');\r",
+              "    pm.expect(target[0]).to.have.property('title');\r",
+              "    pm.expect(target[0]).to.have.property('categoryName');\r",
+              "    pm.expect(target[0]).to.have.property('initiatorName');\r",
+              "    pm.expect(target[0]).to.have.property('rating');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Первое событие в списке должно иметь id = 6\", function () {\r",
+              "    pm.expect(target[0].eventId).to.equal(6);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинг события с id = 6 должен быть равен 2\", function () {\r",
+              "    pm.expect(target[0].rating).to.equal(2);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/rating/events",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "rating",
+            "events"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Попытка поставить лайк несуществующему событию",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 404\", function () {\r",
+              "    pm.response.to.have.status(404);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/999/rating/3?isLike=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "999",
+            "rating",
+            "3"
+          ],
+          "query": [
+            {
+              "key": "isLike",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Попытка поставить лайк с id пользователя которого не существует",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 404\", function () {\r",
+              "    pm.response.to.have.status(404);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/event/6/rating/999?isLike=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "event",
+            "6",
+            "rating",
+            "999"
+          ],
+          "query": [
+            {
+              "key": "isLike",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Формирование рейтинга пользователей",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {\r",
+              "    pm.response.to.be.ok;    \r",
+              "    pm.response.to.be.withBody;\r",
+              "    pm.response.to.be.json;\r",
+              "});\r",
+              "\r",
+              "const target = pm.response.json();\r",
+              "\r",
+              "pm.test(\"Ответ должен быть непустым массивом\", function () {\r",
+              "    pm.expect(target).to.be.an('array').that.is.not.empty;\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинги мероприятий должны содержать поля: userId, userName, rating\", function () {\r",
+              "    pm.expect(target[0]).to.have.property('userId');\r",
+              "    pm.expect(target[0]).to.have.property('userName');\r",
+              "    pm.expect(target[0]).to.have.property('rating');\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Первый пользователь в списке должен иметь id = 14 (инициатор события с id = 6)\", function () {\r",
+              "    pm.expect(target[0].userId).to.equal(14);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Рейтинг пользователя с id = 14 должен быть равен 2\", function () {\r",
+              "    pm.expect(target[0].rating).to.equal(2);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/rating/users",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "rating",
+            "users"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

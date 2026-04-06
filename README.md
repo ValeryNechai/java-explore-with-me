@@ -1,2 +1,4 @@
 # java-explore-with-me
-Template repository for ExploreWithMe project.
+
+# Схема базы данных ewm-db
+![schema_db_with_likes.png](resources/schema_db_with_likes.png)
