@@ -17,4 +17,9 @@ public class EventShortDto {
     private Boolean paid;
     private String title;
     private Integer views;
+    private Long rating;
+
+    public Long getRating() {
+        return rating == null ? 0 : rating;
+    }
 }

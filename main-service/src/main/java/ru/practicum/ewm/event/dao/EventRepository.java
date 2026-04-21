@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ru.practicum.ewm.event.model.Event;
 import ru.practicum.ewm.event.model.EventState;
+import ru.practicum.ewm.rating.dto.EventWithRating;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -59,13 +60,12 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND (e.eventDate >= :rangeStart) " +
             "AND (e.eventDate <= :rangeEnd) " +
             "AND (:onlyAvailable = false OR e.confirmedRequests < e.participantLimit)")
-    Page<Event> findAllPublishedWithText(@Param("text") String text,
+    List<Event> findAllPublishedWithText(@Param("text") String text,
                                          @Param("categories") List<Long> categories,
                                          @Param("paid") Boolean paid,
                                          @Param("rangeStart") LocalDateTime rangeStart,
                                          @Param("rangeEnd") LocalDateTime rangeEnd,
-                                         @Param("onlyAvailable") boolean onlyAvailable,
-                                         Pageable pageable);
+                                         @Param("onlyAvailable") boolean onlyAvailable);
 
     @Query("SELECT e FROM Event e " +
             "JOIN FETCH e.category " +
@@ -76,12 +76,11 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND (e.eventDate >= :rangeStart) " +
             "AND (e.eventDate <= :rangeEnd) " +
             "AND (:onlyAvailable = false OR e.confirmedRequests < e.participantLimit)")
-    Page<Event> findAllPublishedWithoutText(@Param("categories") List<Long> categories,
+    List<Event> findAllPublishedWithoutText(@Param("categories") List<Long> categories,
                                             @Param("paid") Boolean paid,
                                             @Param("rangeStart") LocalDateTime rangeStart,
                                             @Param("rangeEnd") LocalDateTime rangeEnd,
-                                            @Param("onlyAvailable") boolean onlyAvailable,
-                                            Pageable pageable);
+                                            @Param("onlyAvailable") boolean onlyAvailable);
 
     @Query("SELECT e FROM Event e " +
             "JOIN FETCH e.category " +
@@ -93,12 +92,11 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND (:paid IS NULL OR e.paid = :paid) " +
             "AND (e.eventDate >= :rangeStart) " +
             "AND (:onlyAvailable = false OR e.confirmedRequests < e.participantLimit)")
-    Page<Event> findAllPublishedWithTextWithoutEnd(@Param("text") String text,
-                                         @Param("categories") List<Long> categories,
-                                         @Param("paid") Boolean paid,
-                                         @Param("rangeStart") LocalDateTime rangeStart,
-                                         @Param("onlyAvailable") boolean onlyAvailable,
-                                         Pageable pageable);
+    List<Event> findAllPublishedWithTextWithoutEnd(@Param("text") String text,
+                                                   @Param("categories") List<Long> categories,
+                                                   @Param("paid") Boolean paid,
+                                                   @Param("rangeStart") LocalDateTime rangeStart,
+                                                   @Param("onlyAvailable") boolean onlyAvailable);
 
     @Query("SELECT e FROM Event e " +
             "JOIN FETCH e.category " +
@@ -108,15 +106,23 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND (:paid IS NULL OR e.paid = :paid) " +
             "AND (e.eventDate >= :rangeStart) " +
             "AND (:onlyAvailable = false OR e.confirmedRequests < e.participantLimit)")
-    Page<Event> findAllPublishedWithoutTextWithoutEnd(@Param("categories") List<Long> categories,
-                                            @Param("paid") Boolean paid,
-                                            @Param("rangeStart") LocalDateTime rangeStart,
-                                            @Param("onlyAvailable") boolean onlyAvailable,
-                                            Pageable pageable);
+    List<Event> findAllPublishedWithoutTextWithoutEnd(@Param("categories") List<Long> categories,
+                                                      @Param("paid") Boolean paid,
+                                                      @Param("rangeStart") LocalDateTime rangeStart,
+                                                      @Param("onlyAvailable") boolean onlyAvailable);
 
     @EntityGraph(attributePaths = {"initiator", "category"})
     Event findByIdAndState(Long id, EventState state);
 
     @EntityGraph(attributePaths = {"initiator", "category"})
     List<Event> findByIdIn(List<Long> ids);
+
+    @Query("SELECT new ru.practicum.ewm.rating.dto.EventWithRating(" +
+            "e.id, e.title, e.category.name, e.initiator.name, " +
+            "COALESCE(SUM(r.value), 0)) " +
+            "FROM Event e " +
+            "LEFT JOIN RatingEvent r ON e.id = r.event.id " +
+            "GROUP BY e.id, e.title, e.category.name, e.initiator.name " +
+            "ORDER BY SUM(r.value) DESC NULLS LAST ")
+    List<EventWithRating> findEventsWithRating(Pageable pageable);
 }

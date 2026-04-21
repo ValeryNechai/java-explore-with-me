@@ -26,8 +26,13 @@ public class EventFullDto {
     private EventState state;
     private String title;
     private Integer views;
+    private Long rating;
 
     public Integer getConfirmedRequests() {
         return confirmedRequests == null ? 0 : confirmedRequests;
+    }
+
+    public Long getRating() {
+        return rating == null ? 0 : rating;
     }
 }
